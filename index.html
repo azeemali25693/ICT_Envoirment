@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT Chart Theme Colors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA;
+            color: #0F172A;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding: 60px 20px 80px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: #0F172A;
+            line-height: 1.15;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: #94A3B8;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        .palette-container {
+            width: 100%;
+            max-width: 840px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .palette-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .theme-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .card-header .icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+        }
+
+        .card-header.global .icon-wrap {
+            background: #F1F5F9;
+            color: #475569;
+        }
+
+        .card-header.bull .icon-wrap {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        .card-header.bear .icon-wrap {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+
+        .card-header h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #0F172A;
+            letter-spacing: -0.01em;
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .color-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .color-row:hover {
+            background: #F8FAFC;
+        }
+
+        .color-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .color-box {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+
+        .color-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .color-label {
+            font-size: 0.8rem;
+            color: #94A3B8;
+            font-weight: 500;
+        }
+
+        .color-hex {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #334155;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            letter-spacing: 0.02em;
+        }
+
+        .copy-btn {
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #CBD5E1;
+            font-size: 1rem;
+            transition: background 0.15s ease, color 0.15s ease;
+            flex-shrink: 0;
+            outline: none;
+        }
+
+        .copy-btn:hover {
+            background: #F1F5F9;
+            color: #6366F1;
+        }
+
+        .copy-btn:focus-visible {
+            box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #6366F1;
+        }
+
+        .copy-btn.copied {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        /* Indicator Section */
+        .indicator-section {
+            width: 100%;
+            max-width: 840px;
+            margin-top: 16px;
+        }
+
+        .indicator-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .indicator-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .indicator-left .icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #EEF2FF;
+            color: #6366F1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .indicator-left h2 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #0F172A;
+            letter-spacing: -0.01em;
+        }
+
+        .indicator-left .subtitle {
+            font-size: 0.75rem;
+            color: #94A3B8;
+            font-weight: 400;
+            margin-top: 1px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            outline: none;
+            white-space: nowrap;
+            font-family: inherit;
+            flex-shrink: 0;
+        }
+
+        .btn:focus-visible {
+            box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #6366F1;
+        }
+
+        .btn-primary {
+            background: #0F172A;
+            color: #F8FAFC;
+        }
+
+        .btn-primary:hover {
+            background: #1E293B;
+        }
+
+        .btn-primary i {
+            font-size: 0.9rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #0F172A;
+            color: #F8FAFC;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ICT Chart</h1>
+        <p>Theme colors &amp; Smart Money indicator</p>
+    </div>
+
+    <div class="palette-container">
+
+        <div class="theme-card">
+            <div class="card-header global">
+                <div class="icon-wrap"><i class="bi bi-display"></i></div>
+                <h2>Chart Environment</h2>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #D6DAE7;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Background</span>
+                        <span class="color-hex">#D6DAE7</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, 'D6DAE7', 'Background')" aria-label="Copy Background hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="theme-card">
+            <div class="card-header bull">
+                <div class="icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+                <h2>Bullish Candle</h2>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #5EB162;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Body</span>
+                        <span class="color-hex">#5EB162</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '5EB162', 'Bull Body')" aria-label="Copy Bullish Body hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #6C6C6C;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Borders</span>
+                        <span class="color-hex">#6C6C6C</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '6C6C6C', 'Bull Border')" aria-label="Copy Bullish Border hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #000000;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Wick</span>
+                        <span class="color-hex">#000000</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '000000', 'Bull Wick')" aria-label="Copy Bullish Wick hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="theme-card">
+            <div class="card-header bear">
+                <div class="icon-wrap"><i class="bi bi-graph-down-arrow"></i></div>
+                <h2>Bearish Candle</h2>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #000000;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Body</span>
+                        <span class="color-hex">#000000</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '000000', 'Bear Body')" aria-label="Copy Bearish Body hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #000000;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Borders</span>
+                        <span class="color-hex">#000000</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '000000', 'Bear Border')" aria-label="Copy Bearish Border hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+            <div class="color-row">
+                <div class="color-info">
+                    <div class="color-box" style="background-color: #000000;"></div>
+                    <div class="color-details">
+                        <span class="color-label">Wick</span>
+                        <span class="color-hex">#000000</span>
+                    </div>
+                </div>
+                <button class="copy-btn" onclick="copyHex(this, '000000', 'Bear Wick')" aria-label="Copy Bearish Wick hex">
+                    <i class="bi bi-copy"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="indicator-section">
+        <div class="indicator-card">
+            <div class="indicator-left">
+                <div class="icon-wrap"><i class="bi bi-code-slash"></i></div>
+                <div>
+                    <h2>Smart Money Traps</h2>
+                    <span class="subtitle">Pine Script v5 — TradingView Indicator</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="downloadIndicator()" aria-label="Download indicator">
+                <i class="bi bi-download"></i>
+                <span>Download</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const indicatorSource = `//@version=5
+indicator("Smart Money Traps", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// ==========================================
+// 1. SETTINGS
+// ==========================================
+
+group_main = "Main Logic"
+prd = input.int(10, title="Pivot Period", minval=2, group=group_main)
+max_active_lines = input.int(5, title="Max Active Lines", minval=1, group=group_main)
+
+group_style = "Active Lines Settings"
+active_width = input.int(2, title="Active Line Width", minval=1, group=group_style)
+col_buy = input.color(#787b86, title="Buy Line Color (Lows)", group=group_style)
+col_sell = input.color(#787b86, title="Sell Line Color (Highs)", group=group_style)
+show_price = input.bool(true, title="Show Price Labels (Active)", group=group_style)
+
+group_liq = "Style: Liquidity Taken (Swept Lines)"
+col_line_liq = input.color(color.gray, title="Swept Line Color", group=group_liq)
+style_liq_input = input.string("Dotted", title="Swept Line Style", options=["Solid", "Dashed", "Dotted"], group=group_liq)
+
+group_dots = "Liquidity Grab Dots"
+show_dots = input.bool(true, title="Show Grab Dots", group=group_dots)
+col_buyside_dot = input.color(#f2364680, title="Buyside Grab Color (Red/Highs)", group=group_dots)
+col_sellside_dot = input.color(#08998180, title="Sellside Grab Color (Green/Lows)", group=group_dots)
+bubble_size = input.int(7, "Dot Size", minval=1, group=group_dots)
+
+// ==========================================
+// 2. HELPER FUNCTIONS
+// ==========================================
+
+get_style(style_str) =>
+    out = line.style_solid
+    if style_str == "Dotted"
+        out := line.style_dotted
+    else if style_str == "Dashed"
+        out := line.style_dashed
+    out
+
+style_liq = get_style(style_liq_input)
+line_extension = 15 
+
+var line[] active_buy_lines = array.new_line(0)
+var label[] active_buy_labels = array.new_label(0) 
+var float[] active_buy_prices = array.new_float(0)
+
+var line[] active_sell_lines = array.new_line(0)
+var label[] active_sell_labels = array.new_label(0) 
+var float[] active_sell_prices = array.new_float(0)
+
+// ==========================================
+// 3. CORE LOGIC
+// ==========================================
+
+ph = ta.pivothigh(high, prd, prd)
+pl = ta.pivotlow(low, prd, prd)
+
+// === Create Buy Lines ===
+if not na(pl)
+    is_broken = false
+    pivot_bar_idx = bar_index[prd]
+    for i = 0 to prd - 1
+        if low[i] < pl
+            is_broken := true
+            break
+            
+    if not is_broken
+        newline = line.new(x1=pivot_bar_idx, y1=pl, x2=bar_index + line_extension, y2=pl, color=col_buy, width=active_width)
+        var label newlabel = na
+        if show_price
+            newlabel := label.new(x=bar_index + line_extension, y=pl, text=str.tostring(pl, format.mintick), style=label.style_label_left, color=col_buy, textcolor=color.white, size=size.small)
+        
+        array.push(active_buy_lines, newline)
+        array.push(active_buy_labels, newlabel) 
+        array.push(active_buy_prices, pl)
+        
+        if array.size(active_buy_lines) > max_active_lines
+            old_line = array.shift(active_buy_lines)
+            old_label = array.shift(active_buy_labels)
+            array.shift(active_buy_prices)
+            line.delete(old_line)
+            label.delete(old_label)
+
+// === Create Sell Lines ===
+if not na(ph)
+    is_broken = false
+    pivot_bar_idx = bar_index[prd]
+    for i = 0 to prd - 1
+        if high[i] > ph
+            is_broken := true
+            break
+            
+    if not is_broken
+        newline = line.new(x1=pivot_bar_idx, y1=ph, x2=bar_index + line_extension, y2=ph, color=col_sell, width=active_width)
+        var label newlabel = na
+        if show_price
+            newlabel := label.new(x=bar_index + line_extension, y=ph, text=str.tostring(ph, format.mintick), style=label.style_label_left, color=col_sell, textcolor=color.white, size=size.small)
+
+        array.push(active_sell_lines, newline)
+        array.push(active_sell_labels, newlabel)
+        array.push(active_sell_prices, ph)
+        
+        if array.size(active_sell_lines) > max_active_lines
+            old_line = array.shift(active_sell_lines)
+            old_label = array.shift(active_sell_labels)
+            array.shift(active_sell_prices)
+            line.delete(old_line)
+            label.delete(old_label)
+
+
+// ==========================================
+// 4. UPDATE LINES & DOTS
+// ==========================================
+
+bool buysideGrabFound = false
+bool sellsideGrabFound = false
+
+// Check Buy Lines (Lows)
+if array.size(active_buy_lines) > 0
+    for i = array.size(active_buy_lines) - 1 to 0
+        l = array.get(active_buy_lines, i)
+        lb = array.get(active_buy_labels, i)
+        lvl = array.get(active_buy_prices, i)
+        
+        if low <= lvl
+            line.set_x2(l, bar_index)
+            line.set_color(l, col_line_liq)
+            line.set_style(l, style_liq)
+            if not na(lb)
+                label.delete(lb)
+            
+            // Trigger uniform dot for Sellside
+            sellsideGrabFound := true
+
+            array.remove(active_buy_lines, i)
+            array.remove(active_buy_labels, i)
+            array.remove(active_buy_prices, i)
+        else
+            new_x = bar_index + line_extension
+            line.set_x2(l, new_x)
+            if not na(lb)
+                label.set_x(lb, new_x) 
+
+// Check Sell Lines (Highs)
+if array.size(active_sell_lines) > 0
+    for i = array.size(active_sell_lines) - 1 to 0
+        l = array.get(active_sell_lines, i)
+        lb = array.get(active_sell_labels, i)
+        lvl = array.get(active_sell_prices, i)
+        
+        if high >= lvl
+            line.set_x2(l, bar_index)
+            line.set_color(l, col_line_liq)
+            line.set_style(l, style_liq)
+            if not na(lb)
+                label.delete(lb)
+
+            // Trigger uniform dot for Buyside
+            buysideGrabFound := true
+
+            array.remove(active_sell_lines, i)
+            array.remove(active_sell_labels, i)
+            array.remove(active_sell_prices, i)
+        else
+            new_x = bar_index + line_extension
+            line.set_x2(l, new_x)
+            if not na(lb)
+                label.set_x(lb, new_x)
+
+// ==========================================
+// 5. PLOT UNIFORM DOTS
+// ==========================================
+
+// Buyside (Redish) Dots -> Highs
+plot(show_dots and buysideGrabFound ? high : na, "Buyside Grab Dot", col_buyside_dot, bubble_size, plot.style_circles, false, 0)
+
+// Sellside (Greenish) Dots -> Lows
+plot(show_dots and sellsideGrabFound ? low : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)`;
+
+        function downloadIndicator() {
+            const blob = new Blob([indicatorSource], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'SmartMoneyTraps.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Downloaded successfully');
+        }
+
+        function copyHex(btn, hexStr) {
+            const clean = hexStr.replace('#', '');
+            navigator.clipboard.writeText(clean).then(() => {
+                const icon = btn.querySelector('i');
+                icon.className = 'bi bi-check-lg';
+                btn.classList.add('copied');
+                showToast(`#${clean} copied`);
+                setTimeout(() => {
+                    icon.className = 'bi bi-copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                showToast('Copy failed');
+            });
+        }
+
+        let toastTimer;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+        }
+    </script>
+</body>
+</html>
