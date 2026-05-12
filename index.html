@@ -660,7 +660,32 @@ if array.size(active_sell_lines) > 0
 plot(show_dots and buysideGrabFound ? high : na, "Buyside Grab Dot", col_buyside_dot, bubble_size, plot.style_circles, false, 0)
 
 // Sellside (Greenish) Dots -> Lows
-plot(show_dots and sellsideGrabFound ? low : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)`;
+plot(show_dots and sellsideGrabFound ? low : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)
+
+// ==========================================
+// 6. NY SESSION VERTICAL LINES (7:00 AM & 9:30 AM)
+// ==========================================
+
+group_ny = "NY Time Lines (UTC-4/5 Dynamics)"
+show_ny_lines = input.bool(true, title="Show NY Open Lines (7:00 & 9:30)", group=group_ny)
+col_ny = input.color(color.gray, title="NY Line Color", group=group_ny)
+
+// Getting NY Time natively handling Daylight Savings (UTC-4/-5 dynamics)
+h_ny = hour(time, "America/New_York")
+m_ny = minute(time, "America/New_York")
+
+is_7am = (h_ny == 7 and m_ny == 0)
+is_930am = (h_ny == 9 and m_ny == 30)
+
+if show_ny_lines
+    // 1st Line: 7:00 AM vertical dashed line (1px) extends up and down
+    if is_7am
+        line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
+        
+    // 2nd Line: 9:30 AM vertical dashed line (1px) extends up and down
+    if is_930am
+        line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
+`;
 
         function downloadIndicator() {
             const blob = new Blob([indicatorSource], { type: 'text/plain;charset=utf-8' });
