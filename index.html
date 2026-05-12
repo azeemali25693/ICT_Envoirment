@@ -668,7 +668,7 @@ plot(show_dots and sellsideGrabFound ? low : na, "Sellside Grab Dot", col_sellsi
 
 group_ny = "NY Time Lines (UTC-4/5 Dynamics)"
 show_ny_lines = input.bool(true, title="Show NY Open Lines (7:00 & 9:30)", group=group_ny)
-col_ny = input.color(color.gray, title="NY Line Color", group=group_ny)
+col_ny = input.color(color.black, title="NY Line Color", group=group_ny)
 
 // Getting NY Time natively handling Daylight Savings (UTC-4/-5 dynamics)
 h_ny = hour(time, "America/New_York")
