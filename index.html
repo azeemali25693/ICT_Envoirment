@@ -483,7 +483,10 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        const indicatorSource = `//@version=5
+        const indicatorSource = `// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © azeemali25693
+
+//@version=5
 indicator("Make me Rich", overlay=true, max_lines_count=500, max_labels_count=500)
 
 // ==========================================
@@ -491,24 +494,40 @@ indicator("Make me Rich", overlay=true, max_lines_count=500, max_labels_count=50
 // ==========================================
 
 group_main = "Main Logic"
-prd = input.int(10, title="Pivot Period", minval=2, group=group_main)
-max_active_lines = input.int(5, title="Max Active Lines", minval=1, group=group_main)
+prd = input.int(10, title="Pivot Period (Current TF)", minval=2, group=group_main)
+prd_htf = input.int(5, title="Pivot Period (HTF: 5m/15m/1H)", minval=2, group=group_main)
+max_active_lines = input.int(5, title="Max Active Lines Per TF", minval=1, group=group_main)
+
+group_mtf = "Multi-Timeframe Settings"
+show_curr_tf = input.bool(true, title="Show Current TF Levels", group=group_mtf)
+show_5m      = input.bool(true, title="Show 5m Levels",  group=group_mtf)
+show_15m     = input.bool(true, title="Show 15m Levels", group=group_mtf)
+show_1h      = input.bool(true, title="Show 1H Levels",  group=group_mtf)
 
 group_style = "Active Lines Settings"
 active_width = input.int(2, title="Active Line Width", minval=1, group=group_style)
-col_buy = input.color(#787b86, title="Buy Line Color (Lows)", group=group_style)
-col_sell = input.color(#787b86, title="Sell Line Color (Highs)", group=group_style)
-show_price = input.bool(true, title="Show Price Labels (Active)", group=group_style)
+show_price   = input.bool(true, title="Show Price Labels (Active)", group=group_style)
+show_tf_tag  = input.bool(true, title="Show TF Tag on Label", group=group_style)
+
+// Per-TF colors
+col_curr_buy  = input.color(#787b86, title="Current TF - Buy (Lows)",   group=group_style)
+col_curr_sell = input.color(#787b86, title="Current TF - Sell (Highs)", group=group_style)
+col_5m_buy    = input.color(#787b86, title="5m - Buy (Lows)",   group=group_style)
+col_5m_sell   = input.color(#787b86, title="5m - Sell (Highs)", group=group_style)
+col_15m_buy   = input.color(#787b86, title="15m - Buy (Lows)",   group=group_style)
+col_15m_sell  = input.color(#787b86, title="15m - Sell (Highs)", group=group_style)
+col_1h_buy    = input.color(#787b86, title="1H - Buy (Lows)",   group=group_style)
+col_1h_sell   = input.color(#787b86, title="1H - Sell (Highs)", group=group_style)
 
 group_liq = "Style: Liquidity Taken (Swept Lines)"
-col_line_liq = input.color(color.gray, title="Swept Line Color", group=group_liq)
+col_line_liq    = input.color(color.gray, title="Swept Line Color", group=group_liq)
 style_liq_input = input.string("Dotted", title="Swept Line Style", options=["Solid", "Dashed", "Dotted"], group=group_liq)
 
 group_dots = "Liquidity Grab Dots"
-show_dots = input.bool(true, title="Show Grab Dots", group=group_dots)
-col_buyside_dot = input.color(#f2364680, title="Buyside Grab Color (Red/Highs)", group=group_dots)
+show_dots        = input.bool(true, title="Show Grab Dots", group=group_dots)
+col_buyside_dot  = input.color(#f2364680, title="Buyside Grab Color (Red/Highs)",  group=group_dots)
 col_sellside_dot = input.color(#08998180, title="Sellside Grab Color (Green/Lows)", group=group_dots)
-bubble_size = input.int(7, "Dot Size", minval=1, group=group_dots)
+bubble_size      = input.int(7, "Dot Size", minval=1, group=group_dots)
 
 // ==========================================
 // 2. HELPER FUNCTIONS
@@ -523,173 +542,269 @@ get_style(style_str) =>
     out
 
 style_liq = get_style(style_liq_input)
-line_extension = 15 
+line_extension = 15
 
-var line[] active_buy_lines = array.new_line(0)
-var label[] active_buy_labels = array.new_label(0) 
-var float[] active_buy_prices = array.new_float(0)
+// Arrays for each TF
+var line[]  cur_buy_lines   = array.new_line(0)
+var label[] cur_buy_labels  = array.new_label(0)
+var float[] cur_buy_prices  = array.new_float(0)
+var line[]  cur_sell_lines  = array.new_line(0)
+var label[] cur_sell_labels = array.new_label(0)
+var float[] cur_sell_prices = array.new_float(0)
 
-var line[] active_sell_lines = array.new_line(0)
-var label[] active_sell_labels = array.new_label(0) 
-var float[] active_sell_prices = array.new_float(0)
+var line[]  m5_buy_lines    = array.new_line(0)
+var label[] m5_buy_labels   = array.new_label(0)
+var float[] m5_buy_prices   = array.new_float(0)
+var line[]  m5_sell_lines   = array.new_line(0)
+var label[] m5_sell_labels  = array.new_label(0)
+var float[] m5_sell_prices  = array.new_float(0)
+
+var line[]  m15_buy_lines   = array.new_line(0)
+var label[] m15_buy_labels  = array.new_label(0)
+var float[] m15_buy_prices  = array.new_float(0)
+var line[]  m15_sell_lines  = array.new_line(0)
+var label[] m15_sell_labels = array.new_label(0)
+var float[] m15_sell_prices = array.new_float(0)
+
+var line[]  h1_buy_lines    = array.new_line(0)
+var label[] h1_buy_labels   = array.new_label(0)
+var float[] h1_buy_prices   = array.new_float(0)
+var line[]  h1_sell_lines   = array.new_line(0)
+var label[] h1_sell_labels  = array.new_label(0)
+var float[] h1_sell_prices  = array.new_float(0)
 
 // ==========================================
-// 3. CORE LOGIC
+// 3. CURRENT TF PIVOTS
 // ==========================================
 
-ph = ta.pivothigh(high, prd, prd)
-pl = ta.pivotlow(low, prd, prd)
+cur_ph = ta.pivothigh(high, prd, prd)
+cur_pl = ta.pivotlow(low, prd, prd)
 
-// === Create Buy Lines ===
-if not na(pl)
+// ==========================================
+// 4. HTF PIVOTS via request.security
+// Returns the pivot value (confirmed) on HTF
+// ==========================================
+
+f_htf_pivots() =>
+    ph_ = ta.pivothigh(high, prd_htf, prd_htf)
+    pl_ = ta.pivotlow(low,  prd_htf, prd_htf)
+    [ph_, pl_]
+
+[m5_ph_raw,  m5_pl_raw]  = request.security(syminfo.tickerid, "5",  f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[m15_ph_raw, m15_pl_raw] = request.security(syminfo.tickerid, "15", f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[h1_ph_raw,  h1_pl_raw]  = request.security(syminfo.tickerid, "60", f_htf_pivots(), lookahead=barmerge.lookahead_off)
+
+// Detect a NEW pivot (value changed and not na)
+var float m5_ph_last = na, var float m5_pl_last = na
+var float m15_ph_last = na, var float m15_pl_last = na
+var float h1_ph_last  = na, var float h1_pl_last  = na
+
+new_m5_ph  = not na(m5_ph_raw)  and m5_ph_raw  != m5_ph_last
+new_m5_pl  = not na(m5_pl_raw)  and m5_pl_raw  != m5_pl_last
+new_m15_ph = not na(m15_ph_raw) and m15_ph_raw != m15_ph_last
+new_m15_pl = not na(m15_pl_raw) and m15_pl_raw != m15_pl_last
+new_h1_ph  = not na(h1_ph_raw)  and h1_ph_raw  != h1_ph_last
+new_h1_pl  = not na(h1_pl_raw)  and h1_pl_raw  != h1_pl_last
+
+if not na(m5_ph_raw)
+    m5_ph_last := m5_ph_raw
+if not na(m5_pl_raw)
+    m5_pl_last := m5_pl_raw
+if not na(m15_ph_raw)
+    m15_ph_last := m15_ph_raw
+if not na(m15_pl_raw)
+    m15_pl_last := m15_pl_raw
+if not na(h1_ph_raw)
+    h1_ph_last := h1_ph_raw
+if not na(h1_pl_raw)
+    h1_pl_last := h1_pl_raw
+
+// ==========================================
+// 5. ADD-LINE HELPERS
+// ==========================================
+
+f_add_buy(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
+    // Skip duplicates already in array
+    bool exists = false
+    if array.size(prices_arr) > 0
+        for j = 0 to array.size(prices_arr) - 1
+            if array.get(prices_arr, j) == lvl
+                exists := true
+                break
+    if not exists
+        nl = line.new(x1=bar_index - prd, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
+        label lab = na
+        if show_price
+            txt = show_tf_tag and tf_tag != "" ? tf_tag + " " + str.tostring(lvl, format.mintick) : str.tostring(lvl, format.mintick)
+            lab := label.new(x=bar_index + line_extension, y=lvl, text=txt, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
+        array.push(lines_arr, nl)
+        array.push(labels_arr, lab)
+        array.push(prices_arr, lvl)
+        if array.size(lines_arr) > max_active_lines
+            ol = array.shift(lines_arr)
+            olb = array.shift(labels_arr)
+            array.shift(prices_arr)
+            line.delete(ol)
+            label.delete(olb)
+
+f_add_sell(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
+    bool exists = false
+    if array.size(prices_arr) > 0
+        for j = 0 to array.size(prices_arr) - 1
+            if array.get(prices_arr, j) == lvl
+                exists := true
+                break
+    if not exists
+        nl = line.new(x1=bar_index - prd, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
+        label lab = na
+        if show_price
+            txt = show_tf_tag and tf_tag != "" ? tf_tag + " " + str.tostring(lvl, format.mintick) : str.tostring(lvl, format.mintick)
+            lab := label.new(x=bar_index + line_extension, y=lvl, text=txt, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
+        array.push(lines_arr, nl)
+        array.push(labels_arr, lab)
+        array.push(prices_arr, lvl)
+        if array.size(lines_arr) > max_active_lines
+            ol = array.shift(lines_arr)
+            olb = array.shift(labels_arr)
+            array.shift(prices_arr)
+            line.delete(ol)
+            label.delete(olb)
+
+// ==========================================
+// 6. CREATE LINES
+// ==========================================
+
+// --- Current TF (with break-check on current bars) ---
+if show_curr_tf and not na(cur_pl)
     is_broken = false
-    pivot_bar_idx = bar_index[prd]
     for i = 0 to prd - 1
-        if low[i] < pl
+        if low[i] < cur_pl
             is_broken := true
             break
-            
     if not is_broken
-        newline = line.new(x1=pivot_bar_idx, y1=pl, x2=bar_index + line_extension, y2=pl, color=col_buy, width=active_width)
-        var label newlabel = na
-        if show_price
-            newlabel := label.new(x=bar_index + line_extension, y=pl, text=str.tostring(pl, format.mintick), style=label.style_label_left, color=col_buy, textcolor=color.white, size=size.small)
-        
-        array.push(active_buy_lines, newline)
-        array.push(active_buy_labels, newlabel) 
-        array.push(active_buy_prices, pl)
-        
-        if array.size(active_buy_lines) > max_active_lines
-            old_line = array.shift(active_buy_lines)
-            old_label = array.shift(active_buy_labels)
-            array.shift(active_buy_prices)
-            line.delete(old_line)
-            label.delete(old_label)
+        f_add_buy(cur_pl, col_curr_buy, cur_buy_lines, cur_buy_labels, cur_buy_prices, "")
 
-// === Create Sell Lines ===
-if not na(ph)
+if show_curr_tf and not na(cur_ph)
     is_broken = false
-    pivot_bar_idx = bar_index[prd]
     for i = 0 to prd - 1
-        if high[i] > ph
+        if high[i] > cur_ph
             is_broken := true
             break
-            
     if not is_broken
-        newline = line.new(x1=pivot_bar_idx, y1=ph, x2=bar_index + line_extension, y2=ph, color=col_sell, width=active_width)
-        var label newlabel = na
-        if show_price
-            newlabel := label.new(x=bar_index + line_extension, y=ph, text=str.tostring(ph, format.mintick), style=label.style_label_left, color=col_sell, textcolor=color.white, size=size.small)
+        f_add_sell(cur_ph, col_curr_sell, cur_sell_lines, cur_sell_labels, cur_sell_prices, "")
 
-        array.push(active_sell_lines, newline)
-        array.push(active_sell_labels, newlabel)
-        array.push(active_sell_prices, ph)
-        
-        if array.size(active_sell_lines) > max_active_lines
-            old_line = array.shift(active_sell_lines)
-            old_label = array.shift(active_sell_labels)
-            array.shift(active_sell_prices)
-            line.delete(old_line)
-            label.delete(old_label)
+// --- 5m ---
+if show_5m and new_m5_pl
+    f_add_buy(m5_pl_raw, col_5m_buy, m5_buy_lines, m5_buy_labels, m5_buy_prices, "5m")
+if show_5m and new_m5_ph
+    f_add_sell(m5_ph_raw, col_5m_sell, m5_sell_lines, m5_sell_labels, m5_sell_prices, "5m")
 
+// --- 15m ---
+if show_15m and new_m15_pl
+    f_add_buy(m15_pl_raw, col_15m_buy, m15_buy_lines, m15_buy_labels, m15_buy_prices, "15m")
+if show_15m and new_m15_ph
+    f_add_sell(m15_ph_raw, col_15m_sell, m15_sell_lines, m15_sell_labels, m15_sell_prices, "15m")
 
-// ==========================================
-// 4. UPDATE LINES & DOTS
-// ==========================================
-
-bool buysideGrabFound = false
-bool sellsideGrabFound = false
-
-// Check Buy Lines (Lows)
-if array.size(active_buy_lines) > 0
-    for i = array.size(active_buy_lines) - 1 to 0
-        l = array.get(active_buy_lines, i)
-        lb = array.get(active_buy_labels, i)
-        lvl = array.get(active_buy_prices, i)
-        
-        if low <= lvl
-            line.set_x2(l, bar_index)
-            line.set_color(l, col_line_liq)
-            line.set_style(l, style_liq)
-            if not na(lb)
-                label.delete(lb)
-            
-            // Trigger uniform dot for Sellside
-            sellsideGrabFound := true
-
-            array.remove(active_buy_lines, i)
-            array.remove(active_buy_labels, i)
-            array.remove(active_buy_prices, i)
-        else
-            new_x = bar_index + line_extension
-            line.set_x2(l, new_x)
-            if not na(lb)
-                label.set_x(lb, new_x) 
-
-// Check Sell Lines (Highs)
-if array.size(active_sell_lines) > 0
-    for i = array.size(active_sell_lines) - 1 to 0
-        l = array.get(active_sell_lines, i)
-        lb = array.get(active_sell_labels, i)
-        lvl = array.get(active_sell_prices, i)
-        
-        if high >= lvl
-            line.set_x2(l, bar_index)
-            line.set_color(l, col_line_liq)
-            line.set_style(l, style_liq)
-            if not na(lb)
-                label.delete(lb)
-
-            // Trigger uniform dot for Buyside
-            buysideGrabFound := true
-
-            array.remove(active_sell_lines, i)
-            array.remove(active_sell_labels, i)
-            array.remove(active_sell_prices, i)
-        else
-            new_x = bar_index + line_extension
-            line.set_x2(l, new_x)
-            if not na(lb)
-                label.set_x(lb, new_x)
+// --- 1H ---
+if show_1h and new_h1_pl
+    f_add_buy(h1_pl_raw, col_1h_buy, h1_buy_lines, h1_buy_labels, h1_buy_prices, "1H")
+if show_1h and new_h1_ph
+    f_add_sell(h1_ph_raw, col_1h_sell, h1_sell_lines, h1_sell_labels, h1_sell_prices, "1H")
 
 // ==========================================
-// 5. PLOT UNIFORM DOTS
+// 7. UPDATE LINES & DETECT SWEEPS
 // ==========================================
 
-// Buyside (Redish) Dots -> Highs
-plot(show_dots and buysideGrabFound ? high : na, "Buyside Grab Dot", col_buyside_dot, bubble_size, plot.style_circles, false, 0)
+f_update_buys(lines_arr, labels_arr, prices_arr) =>
+    bool grab = false
+    if array.size(lines_arr) > 0
+        for i = array.size(lines_arr) - 1 to 0
+            l   = array.get(lines_arr, i)
+            lb  = array.get(labels_arr, i)
+            lvl = array.get(prices_arr, i)
+            if low <= lvl
+                line.set_x2(l, bar_index)
+                line.set_color(l, col_line_liq)
+                line.set_style(l, style_liq)
+                if not na(lb)
+                    label.delete(lb)
+                grab := true
+                array.remove(lines_arr, i)
+                array.remove(labels_arr, i)
+                array.remove(prices_arr, i)
+            else
+                new_x = bar_index + line_extension
+                line.set_x2(l, new_x)
+                if not na(lb)
+                    label.set_x(lb, new_x)
+    grab
 
-// Sellside (Greenish) Dots -> Lows
-plot(show_dots and sellsideGrabFound ? low : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)
+f_update_sells(lines_arr, labels_arr, prices_arr) =>
+    bool grab = false
+    if array.size(lines_arr) > 0
+        for i = array.size(lines_arr) - 1 to 0
+            l   = array.get(lines_arr, i)
+            lb  = array.get(labels_arr, i)
+            lvl = array.get(prices_arr, i)
+            if high >= lvl
+                line.set_x2(l, bar_index)
+                line.set_color(l, col_line_liq)
+                line.set_style(l, style_liq)
+                if not na(lb)
+                    label.delete(lb)
+                grab := true
+                array.remove(lines_arr, i)
+                array.remove(labels_arr, i)
+                array.remove(prices_arr, i)
+            else
+                new_x = bar_index + line_extension
+                line.set_x2(l, new_x)
+                if not na(lb)
+                    label.set_x(lb, new_x)
+    grab
+
+g1 = f_update_buys(cur_buy_lines, cur_buy_labels, cur_buy_prices)
+g2 = f_update_buys(m5_buy_lines,  m5_buy_labels,  m5_buy_prices)
+g3 = f_update_buys(m15_buy_lines, m15_buy_labels, m15_buy_prices)
+g4 = f_update_buys(h1_buy_lines,  h1_buy_labels,  h1_buy_prices)
+sellsideGrabFound = g1 or g2 or g3 or g4
+
+g5 = f_update_sells(cur_sell_lines, cur_sell_labels, cur_sell_prices)
+g6 = f_update_sells(m5_sell_lines,  m5_sell_labels,  m5_sell_prices)
+g7 = f_update_sells(m15_sell_lines, m15_sell_labels, m15_sell_prices)
+g8 = f_update_sells(h1_sell_lines,  h1_sell_labels,  h1_sell_prices)
+buysideGrabFound = g5 or g6 or g7 or g8
 
 // ==========================================
-// 6. NY SESSION VERTICAL LINES (7:00 AM, 9:30 AM & 1:00 PM)
+// 8. PLOT GRAB DOTS
+// ==========================================
+
+plot(show_dots and buysideGrabFound  ? high : na, "Buyside Grab Dot",  col_buyside_dot,  bubble_size, plot.style_circles, false, 0)
+plot(show_dots and sellsideGrabFound ? low  : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)
+
+// ==========================================
+// 9. NY SESSION VERTICAL LINES
 // ==========================================
 
 group_ny = "NY Time Lines (UTC-4/5 Dynamics)"
 show_ny_lines = input.bool(true, title="Show NY Open Lines (7:00, 9:30 & 13:00)", group=group_ny)
-col_ny = input.color(color.black, title="NY Line Color", group=group_ny)
+col_ny        = input.color(color.black, title="NY Line Color", group=group_ny)
 
-// Getting NY Time natively handling Daylight Savings (UTC-4/-5 dynamics)
 h_ny = hour(time, "America/New_York")
 m_ny = minute(time, "America/New_York")
 
-is_7am = (h_ny == 7 and m_ny == 0)
-is_930am = (h_ny == 9 and m_ny == 30)
-is_1pm = (h_ny == 13 and m_ny == 0)
+is_7am   = (h_ny == 7  and m_ny == 0)
+is_930am = (h_ny == 9  and m_ny == 30)
+is_1pm   = (h_ny == 13 and m_ny == 0)
 
 if show_ny_lines
-    // 1st Line: 7:00 AM vertical dashed line (1px) extends up and down
     if is_7am
         line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
-        
-    // 2nd Line: 9:30 AM vertical dashed line (1px) extends up and down
     if is_930am
         line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
-
-    // 3rd Line: 1:00 PM vertical dashed line (1px) extends up and down
     if is_1pm
         line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
+
 `;
 
         function downloadIndicator() {
