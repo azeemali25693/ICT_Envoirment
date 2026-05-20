@@ -803,7 +803,7 @@ if not na(d1_pl_raw)
 // 5. ADD-LINE HELPERS
 // ==========================================
 
-// Removed `tf_tag` completely so labels only show raw price
+// Removed \`tf_tag\` completely so labels only show raw price
 f_add_buy(lvl, start_bi, col, lines_arr, labels_arr, prices_arr) =>
     bool exists = false
     if array.size(prices_arr) > 0
@@ -1100,20 +1100,60 @@ if show_ny_lines and timeframe.period == "1"
             showToast('Downloaded successfully');
         }
 
+        // Updated copy mechanism that fixes the issue on local "file://" usage
         function copyHex(btn, hexStr) {
             const clean = hexStr.replace('#', '');
-            navigator.clipboard.writeText(clean).then(() => {
+            
+            // Reusable function to handle successful UI update
+            const showSuccess = () => {
                 const icon = btn.querySelector('i');
-                icon.className = 'bi bi-check-lg';
+                if (icon) icon.className = 'bi bi-check-lg';
                 btn.classList.add('copied');
+                
                 showToast(`#${clean} copied`);
+                
                 setTimeout(() => {
-                    icon.className = 'bi bi-copy';
+                    if (icon) icon.className = 'bi bi-copy';
                     btn.classList.remove('copied');
                 }, 2000);
-            }).catch(() => {
-                showToast('Copy failed');
-            });
+            };
+
+            // This fallback is guaranteed to work even when opening directly from desktop
+            const fallbackCopy = (text) => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                
+                // Hide the textarea entirely from view
+                textArea.style.position = "fixed";
+                textArea.style.top = "-9999px";
+                textArea.style.left = "-9999px";
+                
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showSuccess();
+                    } else {
+                        showToast('Copy failed');
+                    }
+                } catch (err) {
+                    showToast('Copy failed');
+                }
+                
+                document.body.removeChild(textArea);
+            };
+
+            // Use Clipboard API if available and safe (https), else fallback (file://)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(clean)
+                    .then(showSuccess)
+                    .catch(() => fallbackCopy(clean));
+            } else {
+                fallbackCopy(clean);
+            }
         }
 
         let toastTimer;
