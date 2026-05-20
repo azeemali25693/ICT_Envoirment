@@ -602,30 +602,44 @@ indicator("Insight Me", overlay=true, max_lines_count=500, max_labels_count=500)
 // ==========================================
 
 group_main = "Main Logic"
-prd = input.int(10, title="Pivot Period (Current TF)", minval=2, group=group_main)
-prd_htf = input.int(5, title="Pivot Period (HTF: 5m/15m/1H)", minval=2, group=group_main)
+prd = input.int(6, title="Pivot Period (Current TF)", minval=2, group=group_main)
+prd_htf = input.int(5, title="Pivot Period (HTF)", minval=2, group=group_main)
 max_active_lines = input.int(5, title="Max Active Lines Per TF", minval=1, group=group_main)
 
 group_mtf = "Multi-Timeframe Settings"
 show_curr_tf = input.bool(true, title="Show Current TF Levels", group=group_mtf)
-show_5m      = input.bool(true, title="Show 5m Levels",  group=group_mtf)
-show_15m     = input.bool(true, title="Show 15m Levels", group=group_mtf)
-show_1h      = input.bool(true, title="Show 1H Levels",  group=group_mtf)
+show_3m      = input.bool(true, title="Show 3m Levels (1m chart only)",  group=group_mtf)
+show_5m      = input.bool(true, title="Show 5m Levels (1m chart only)",  group=group_mtf)
+show_15m     = input.bool(true, title="Show 15m Levels (1m chart only)", group=group_mtf)
+show_30m     = input.bool(true, title="Show 30m Levels (1m chart only)", group=group_mtf)
+show_1h      = input.bool(true, title="Show 1H Levels (1m chart only)",  group=group_mtf)
+show_2h      = input.bool(true, title="Show 2H Levels (1m chart only)",  group=group_mtf)
+show_4h      = input.bool(true, title="Show 4H Levels (1m chart only)",  group=group_mtf)
+show_1d      = input.bool(true, title="Show 1D Levels (1m chart only)",  group=group_mtf)
 
 group_style = "Active Lines Settings"
 active_width = input.int(2, title="Active Line Width", minval=1, group=group_style)
 show_price   = input.bool(true, title="Show Price Labels (Active)", group=group_style)
-show_tf_tag  = input.bool(true, title="Show TF Tag on Label", group=group_style)
 
 // Per-TF colors
 col_curr_buy  = input.color(#787b86, title="Current TF - Buy (Lows)",   group=group_style)
 col_curr_sell = input.color(#787b86, title="Current TF - Sell (Highs)", group=group_style)
+col_3m_buy    = input.color(#787b86, title="3m - Buy (Lows)",   group=group_style)
+col_3m_sell   = input.color(#787b86, title="3m - Sell (Highs)", group=group_style)
 col_5m_buy    = input.color(#787b86, title="5m - Buy (Lows)",   group=group_style)
 col_5m_sell   = input.color(#787b86, title="5m - Sell (Highs)", group=group_style)
 col_15m_buy   = input.color(#787b86, title="15m - Buy (Lows)",   group=group_style)
 col_15m_sell  = input.color(#787b86, title="15m - Sell (Highs)", group=group_style)
+col_30m_buy   = input.color(#787b86, title="30m - Buy (Lows)",   group=group_style)
+col_30m_sell  = input.color(#787b86, title="30m - Sell (Highs)", group=group_style)
 col_1h_buy    = input.color(#787b86, title="1H - Buy (Lows)",   group=group_style)
 col_1h_sell   = input.color(#787b86, title="1H - Sell (Highs)", group=group_style)
+col_2h_buy    = input.color(#787b86, title="2H - Buy (Lows)",   group=group_style)
+col_2h_sell   = input.color(#787b86, title="2H - Sell (Highs)", group=group_style)
+col_4h_buy    = input.color(#787b86, title="4H - Buy (Lows)",   group=group_style)
+col_4h_sell   = input.color(#787b86, title="4H - Sell (Highs)", group=group_style)
+col_1d_buy    = input.color(#787b86, title="1D - Buy (Lows)",   group=group_style)
+col_1d_sell   = input.color(#787b86, title="1D - Sell (Highs)", group=group_style)
 
 group_liq = "Style: Liquidity Taken (Swept Lines)"
 col_line_liq    = input.color(color.gray, title="Swept Line Color", group=group_liq)
@@ -638,7 +652,7 @@ col_sellside_dot = input.color(#08998180, title="Sellside Grab Color (Green/Lows
 bubble_size      = input.int(7, "Dot Size", minval=1, group=group_dots)
 
 // ==========================================
-// 2. HELPER FUNCTIONS
+// 2. HELPER FUNCTIONS & ARRAYS
 // ==========================================
 
 get_style(style_str) =>
@@ -652,7 +666,18 @@ get_style(style_str) =>
 style_liq = get_style(style_liq_input)
 line_extension = 15
 
-// Arrays for each TF
+// HTF lines only on 1m chart
+is_1m_chart = timeframe.in_seconds(timeframe.period) <= 60
+show_3m_eff  = show_3m  and is_1m_chart
+show_5m_eff  = show_5m  and is_1m_chart
+show_15m_eff = show_15m and is_1m_chart
+show_30m_eff = show_30m and is_1m_chart
+show_1h_eff  = show_1h  and is_1m_chart
+show_2h_eff  = show_2h  and is_1m_chart
+show_4h_eff  = show_4h  and is_1m_chart
+show_1d_eff  = show_1d  and is_1m_chart
+
+// Arrays for Current TF
 var line[]  cur_buy_lines   = array.new_line(0)
 var label[] cur_buy_labels  = array.new_label(0)
 var float[] cur_buy_prices  = array.new_float(0)
@@ -660,26 +685,31 @@ var line[]  cur_sell_lines  = array.new_line(0)
 var label[] cur_sell_labels = array.new_label(0)
 var float[] cur_sell_prices = array.new_float(0)
 
-var line[]  m5_buy_lines    = array.new_line(0)
-var label[] m5_buy_labels   = array.new_label(0)
-var float[] m5_buy_prices   = array.new_float(0)
-var line[]  m5_sell_lines   = array.new_line(0)
-var label[] m5_sell_labels  = array.new_label(0)
-var float[] m5_sell_prices  = array.new_float(0)
+// Arrays for MTF
+var line[]  m3_buy_lines    = array.new_line(0), var label[] m3_buy_labels   = array.new_label(0), var float[] m3_buy_prices   = array.new_float(0)
+var line[]  m3_sell_lines   = array.new_line(0), var label[] m3_sell_labels  = array.new_label(0), var float[] m3_sell_prices  = array.new_float(0)
 
-var line[]  m15_buy_lines   = array.new_line(0)
-var label[] m15_buy_labels  = array.new_label(0)
-var float[] m15_buy_prices  = array.new_float(0)
-var line[]  m15_sell_lines  = array.new_line(0)
-var label[] m15_sell_labels = array.new_label(0)
-var float[] m15_sell_prices = array.new_float(0)
+var line[]  m5_buy_lines    = array.new_line(0), var label[] m5_buy_labels   = array.new_label(0), var float[] m5_buy_prices   = array.new_float(0)
+var line[]  m5_sell_lines   = array.new_line(0), var label[] m5_sell_labels  = array.new_label(0), var float[] m5_sell_prices  = array.new_float(0)
 
-var line[]  h1_buy_lines    = array.new_line(0)
-var label[] h1_buy_labels   = array.new_label(0)
-var float[] h1_buy_prices   = array.new_float(0)
-var line[]  h1_sell_lines   = array.new_line(0)
-var label[] h1_sell_labels  = array.new_label(0)
-var float[] h1_sell_prices  = array.new_float(0)
+var line[]  m15_buy_lines   = array.new_line(0), var label[] m15_buy_labels  = array.new_label(0), var float[] m15_buy_prices  = array.new_float(0)
+var line[]  m15_sell_lines  = array.new_line(0), var label[] m15_sell_labels = array.new_label(0), var float[] m15_sell_prices = array.new_float(0)
+
+var line[]  m30_buy_lines   = array.new_line(0), var label[] m30_buy_labels  = array.new_label(0), var float[] m30_buy_prices  = array.new_float(0)
+var line[]  m30_sell_lines  = array.new_line(0), var label[] m30_sell_labels = array.new_label(0), var float[] m30_sell_prices = array.new_float(0)
+
+var line[]  h1_buy_lines    = array.new_line(0), var label[] h1_buy_labels   = array.new_label(0), var float[] h1_buy_prices   = array.new_float(0)
+var line[]  h1_sell_lines   = array.new_line(0), var label[] h1_sell_labels  = array.new_label(0), var float[] h1_sell_prices  = array.new_float(0)
+
+var line[]  h2_buy_lines    = array.new_line(0), var label[] h2_buy_labels   = array.new_label(0), var float[] h2_buy_prices   = array.new_float(0)
+var line[]  h2_sell_lines   = array.new_line(0), var label[] h2_sell_labels  = array.new_label(0), var float[] h2_sell_prices  = array.new_float(0)
+
+var line[]  h4_buy_lines    = array.new_line(0), var label[] h4_buy_labels   = array.new_label(0), var float[] h4_buy_prices   = array.new_float(0)
+var line[]  h4_sell_lines   = array.new_line(0), var label[] h4_sell_labels  = array.new_label(0), var float[] h4_sell_prices  = array.new_float(0)
+
+var line[]  d1_buy_lines    = array.new_line(0), var label[] d1_buy_labels   = array.new_label(0), var float[] d1_buy_prices   = array.new_float(0)
+var line[]  d1_sell_lines   = array.new_line(0), var label[] d1_sell_labels  = array.new_label(0), var float[] d1_sell_prices  = array.new_float(0)
+
 
 // ==========================================
 // 3. CURRENT TF PIVOTS
@@ -688,32 +718,58 @@ var float[] h1_sell_prices  = array.new_float(0)
 cur_ph = ta.pivothigh(high, prd, prd)
 cur_pl = ta.pivotlow(low, prd, prd)
 
+
 // ==========================================
-// 4. HTF PIVOTS via request.security
-// Returns the pivot value (confirmed) on HTF
+// 4. HTF PIVOTS
 // ==========================================
 
 f_htf_pivots() =>
     ph_ = ta.pivothigh(high, prd_htf, prd_htf)
     pl_ = ta.pivotlow(low,  prd_htf, prd_htf)
-    [ph_, pl_]
+    t_ph = not na(ph_) ? time[prd_htf] : na
+    t_pl = not na(pl_) ? time[prd_htf] : na
+    [ph_, pl_, t_ph, t_pl]
 
-[m5_ph_raw,  m5_pl_raw]  = request.security(syminfo.tickerid, "5",  f_htf_pivots(), lookahead=barmerge.lookahead_off)
-[m15_ph_raw, m15_pl_raw] = request.security(syminfo.tickerid, "15", f_htf_pivots(), lookahead=barmerge.lookahead_off)
-[h1_ph_raw,  h1_pl_raw]  = request.security(syminfo.tickerid, "60", f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[m3_ph_raw,  m3_pl_raw,  m3_ph_t,  m3_pl_t]  = request.security(syminfo.tickerid, "3",   f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[m5_ph_raw,  m5_pl_raw,  m5_ph_t,  m5_pl_t]  = request.security(syminfo.tickerid, "5",   f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[m15_ph_raw, m15_pl_raw, m15_ph_t, m15_pl_t] = request.security(syminfo.tickerid, "15",  f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[m30_ph_raw, m30_pl_raw, m30_ph_t, m30_pl_t] = request.security(syminfo.tickerid, "30",  f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[h1_ph_raw,  h1_pl_raw,  h1_ph_t,  h1_pl_t]  = request.security(syminfo.tickerid, "60",  f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[h2_ph_raw,  h2_pl_raw,  h2_ph_t,  h2_pl_t]  = request.security(syminfo.tickerid, "120", f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[h4_ph_raw,  h4_pl_raw,  h4_ph_t,  h4_pl_t]  = request.security(syminfo.tickerid, "240", f_htf_pivots(), lookahead=barmerge.lookahead_off)
+[d1_ph_raw,  d1_pl_raw,  d1_ph_t,  d1_pl_t]  = request.security(syminfo.tickerid, "D",   f_htf_pivots(), lookahead=barmerge.lookahead_off)
 
-// Detect a NEW pivot (value changed and not na)
-var float m5_ph_last = na, var float m5_pl_last = na
+// Detect NEW pivots
+var float m3_ph_last = na,  var float m3_pl_last = na
+var float m5_ph_last = na,  var float m5_pl_last = na
 var float m15_ph_last = na, var float m15_pl_last = na
-var float h1_ph_last  = na, var float h1_pl_last  = na
+var float m30_ph_last = na, var float m30_pl_last = na
+var float h1_ph_last = na,  var float h1_pl_last = na
+var float h2_ph_last = na,  var float h2_pl_last = na
+var float h4_ph_last = na,  var float h4_pl_last = na
+var float d1_ph_last = na,  var float d1_pl_last = na
 
+new_m3_ph  = not na(m3_ph_raw)  and m3_ph_raw  != m3_ph_last
+new_m3_pl  = not na(m3_pl_raw)  and m3_pl_raw  != m3_pl_last
 new_m5_ph  = not na(m5_ph_raw)  and m5_ph_raw  != m5_ph_last
 new_m5_pl  = not na(m5_pl_raw)  and m5_pl_raw  != m5_pl_last
 new_m15_ph = not na(m15_ph_raw) and m15_ph_raw != m15_ph_last
 new_m15_pl = not na(m15_pl_raw) and m15_pl_raw != m15_pl_last
+new_m30_ph = not na(m30_ph_raw) and m30_ph_raw != m30_ph_last
+new_m30_pl = not na(m30_pl_raw) and m30_pl_raw != m30_pl_last
 new_h1_ph  = not na(h1_ph_raw)  and h1_ph_raw  != h1_ph_last
 new_h1_pl  = not na(h1_pl_raw)  and h1_pl_raw  != h1_pl_last
+new_h2_ph  = not na(h2_ph_raw)  and h2_ph_raw  != h2_ph_last
+new_h2_pl  = not na(h2_pl_raw)  and h2_pl_raw  != h2_pl_last
+new_h4_ph  = not na(h4_ph_raw)  and h4_ph_raw  != h4_ph_last
+new_h4_pl  = not na(h4_pl_raw)  and h4_pl_raw  != h4_pl_last
+new_d1_ph  = not na(d1_ph_raw)  and d1_ph_raw  != d1_ph_last
+new_d1_pl  = not na(d1_pl_raw)  and d1_pl_raw  != d1_pl_last
 
+if not na(m3_ph_raw)
+    m3_ph_last := m3_ph_raw
+if not na(m3_pl_raw)
+    m3_pl_last := m3_pl_raw
 if not na(m5_ph_raw)
     m5_ph_last := m5_ph_raw
 if not na(m5_pl_raw)
@@ -722,17 +778,33 @@ if not na(m15_ph_raw)
     m15_ph_last := m15_ph_raw
 if not na(m15_pl_raw)
     m15_pl_last := m15_pl_raw
+if not na(m30_ph_raw)
+    m30_ph_last := m30_ph_raw
+if not na(m30_pl_raw)
+    m30_pl_last := m30_pl_raw
 if not na(h1_ph_raw)
     h1_ph_last := h1_ph_raw
 if not na(h1_pl_raw)
     h1_pl_last := h1_pl_raw
+if not na(h2_ph_raw)
+    h2_ph_last := h2_ph_raw
+if not na(h2_pl_raw)
+    h2_pl_last := h2_pl_raw
+if not na(h4_ph_raw)
+    h4_ph_last := h4_ph_raw
+if not na(h4_pl_raw)
+    h4_pl_last := h4_pl_raw
+if not na(d1_ph_raw)
+    d1_ph_last := d1_ph_raw
+if not na(d1_pl_raw)
+    d1_pl_last := d1_pl_raw
 
 // ==========================================
 // 5. ADD-LINE HELPERS
 // ==========================================
 
-f_add_buy(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
-    // Skip duplicates already in array
+// Removed `tf_tag` completely so labels only show raw price
+f_add_buy(lvl, start_bi, col, lines_arr, labels_arr, prices_arr) =>
     bool exists = false
     if array.size(prices_arr) > 0
         for j = 0 to array.size(prices_arr) - 1
@@ -740,10 +812,10 @@ f_add_buy(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
                 exists := true
                 break
     if not exists
-        nl = line.new(x1=bar_index - prd, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
+        nl = line.new(x1=start_bi, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
         label lab = na
         if show_price
-            txt = show_tf_tag and tf_tag != "" ? tf_tag + " " + str.tostring(lvl, format.mintick) : str.tostring(lvl, format.mintick)
+            txt = str.tostring(lvl, format.mintick)
             lab := label.new(x=bar_index + line_extension, y=lvl, text=txt, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
         array.push(lines_arr, nl)
         array.push(labels_arr, lab)
@@ -755,7 +827,7 @@ f_add_buy(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
             line.delete(ol)
             label.delete(olb)
 
-f_add_sell(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
+f_add_sell(lvl, start_bi, col, lines_arr, labels_arr, prices_arr) =>
     bool exists = false
     if array.size(prices_arr) > 0
         for j = 0 to array.size(prices_arr) - 1
@@ -763,10 +835,10 @@ f_add_sell(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
                 exists := true
                 break
     if not exists
-        nl = line.new(x1=bar_index - prd, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
+        nl = line.new(x1=start_bi, y1=lvl, x2=bar_index + line_extension, y2=lvl, color=col, width=active_width)
         label lab = na
         if show_price
-            txt = show_tf_tag and tf_tag != "" ? tf_tag + " " + str.tostring(lvl, format.mintick) : str.tostring(lvl, format.mintick)
+            txt = str.tostring(lvl, format.mintick)
             lab := label.new(x=bar_index + line_extension, y=lvl, text=txt, style=label.style_label_left, color=col, textcolor=color.white, size=size.small)
         array.push(lines_arr, nl)
         array.push(labels_arr, lab)
@@ -777,12 +849,51 @@ f_add_sell(lvl, col, lines_arr, labels_arr, prices_arr, tf_tag) =>
             array.shift(prices_arr)
             line.delete(ol)
             label.delete(olb)
+
+// Helper: find exact wick bar (looks back up to 10000 bars for larger TFs)
+f_bi_wick(lvl, t_htf, htf_secs, is_high) =>
+    bi = bar_index
+    if not na(t_htf) and not na(lvl)
+        start_k = -1
+        max_look = math.min(bar_index, 10000)
+        for k = 0 to max_look
+            if time[k] <= t_htf
+                start_k := k
+                break
+        
+        if start_k != -1
+            best_k = start_k
+            kk = start_k
+            while kk >= 0
+                if time[kk] >= t_htf and time[kk] < t_htf + htf_secs * 1000
+                    px = is_high ? high[kk] : low[kk]
+                    if px == lvl
+                        best_k := kk
+                        break
+                else
+                    if time[kk] >= t_htf + htf_secs * 1000
+                        break
+                kk -= 1
+            bi := bar_index - best_k
+        else
+            bi := bar_index
+    bi
+
+// TF durations in seconds
+secs_3m  = 3  * 60
+secs_5m  = 5  * 60
+secs_15m = 15 * 60
+secs_30m = 30 * 60
+secs_1h  = 60 * 60
+secs_2h  = 120 * 60
+secs_4h  = 240 * 60
+secs_1d  = 1440 * 60
 
 // ==========================================
 // 6. CREATE LINES
 // ==========================================
 
-// --- Current TF (with break-check on current bars) ---
+// --- Current TF ---
 if show_curr_tf and not na(cur_pl)
     is_broken = false
     for i = 0 to prd - 1
@@ -790,7 +901,7 @@ if show_curr_tf and not na(cur_pl)
             is_broken := true
             break
     if not is_broken
-        f_add_buy(cur_pl, col_curr_buy, cur_buy_lines, cur_buy_labels, cur_buy_prices, "")
+        f_add_buy(cur_pl, bar_index - prd, col_curr_buy, cur_buy_lines, cur_buy_labels, cur_buy_prices)
 
 if show_curr_tf and not na(cur_ph)
     is_broken = false
@@ -799,25 +910,72 @@ if show_curr_tf and not na(cur_ph)
             is_broken := true
             break
     if not is_broken
-        f_add_sell(cur_ph, col_curr_sell, cur_sell_lines, cur_sell_labels, cur_sell_prices, "")
+        f_add_sell(cur_ph, bar_index - prd, col_curr_sell, cur_sell_lines, cur_sell_labels, cur_sell_prices)
+
+// --- 3m ---
+if show_3m_eff and new_m3_pl
+    anchor_bi = f_bi_wick(m3_pl_raw, m3_pl_t, secs_3m, false)
+    f_add_buy(m3_pl_raw, anchor_bi, col_3m_buy, m3_buy_lines, m3_buy_labels, m3_buy_prices)
+if show_3m_eff and new_m3_ph
+    anchor_bi = f_bi_wick(m3_ph_raw, m3_ph_t, secs_3m, true)
+    f_add_sell(m3_ph_raw, anchor_bi, col_3m_sell, m3_sell_lines, m3_sell_labels, m3_sell_prices)
 
 // --- 5m ---
-if show_5m and new_m5_pl
-    f_add_buy(m5_pl_raw, col_5m_buy, m5_buy_lines, m5_buy_labels, m5_buy_prices, "5m")
-if show_5m and new_m5_ph
-    f_add_sell(m5_ph_raw, col_5m_sell, m5_sell_lines, m5_sell_labels, m5_sell_prices, "5m")
+if show_5m_eff and new_m5_pl
+    anchor_bi = f_bi_wick(m5_pl_raw, m5_pl_t, secs_5m, false)
+    f_add_buy(m5_pl_raw, anchor_bi, col_5m_buy, m5_buy_lines, m5_buy_labels, m5_buy_prices)
+if show_5m_eff and new_m5_ph
+    anchor_bi = f_bi_wick(m5_ph_raw, m5_ph_t, secs_5m, true)
+    f_add_sell(m5_ph_raw, anchor_bi, col_5m_sell, m5_sell_lines, m5_sell_labels, m5_sell_prices)
 
 // --- 15m ---
-if show_15m and new_m15_pl
-    f_add_buy(m15_pl_raw, col_15m_buy, m15_buy_lines, m15_buy_labels, m15_buy_prices, "15m")
-if show_15m and new_m15_ph
-    f_add_sell(m15_ph_raw, col_15m_sell, m15_sell_lines, m15_sell_labels, m15_sell_prices, "15m")
+if show_15m_eff and new_m15_pl
+    anchor_bi = f_bi_wick(m15_pl_raw, m15_pl_t, secs_15m, false)
+    f_add_buy(m15_pl_raw, anchor_bi, col_15m_buy, m15_buy_lines, m15_buy_labels, m15_buy_prices)
+if show_15m_eff and new_m15_ph
+    anchor_bi = f_bi_wick(m15_ph_raw, m15_ph_t, secs_15m, true)
+    f_add_sell(m15_ph_raw, anchor_bi, col_15m_sell, m15_sell_lines, m15_sell_labels, m15_sell_prices)
+
+// --- 30m ---
+if show_30m_eff and new_m30_pl
+    anchor_bi = f_bi_wick(m30_pl_raw, m30_pl_t, secs_30m, false)
+    f_add_buy(m30_pl_raw, anchor_bi, col_30m_buy, m30_buy_lines, m30_buy_labels, m30_buy_prices)
+if show_30m_eff and new_m30_ph
+    anchor_bi = f_bi_wick(m30_ph_raw, m30_ph_t, secs_30m, true)
+    f_add_sell(m30_ph_raw, anchor_bi, col_30m_sell, m30_sell_lines, m30_sell_labels, m30_sell_prices)
 
 // --- 1H ---
-if show_1h and new_h1_pl
-    f_add_buy(h1_pl_raw, col_1h_buy, h1_buy_lines, h1_buy_labels, h1_buy_prices, "1H")
-if show_1h and new_h1_ph
-    f_add_sell(h1_ph_raw, col_1h_sell, h1_sell_lines, h1_sell_labels, h1_sell_prices, "1H")
+if show_1h_eff and new_h1_pl
+    anchor_bi = f_bi_wick(h1_pl_raw, h1_pl_t, secs_1h, false)
+    f_add_buy(h1_pl_raw, anchor_bi, col_1h_buy, h1_buy_lines, h1_buy_labels, h1_buy_prices)
+if show_1h_eff and new_h1_ph
+    anchor_bi = f_bi_wick(h1_ph_raw, h1_ph_t, secs_1h, true)
+    f_add_sell(h1_ph_raw, anchor_bi, col_1h_sell, h1_sell_lines, h1_sell_labels, h1_sell_prices)
+
+// --- 2H ---
+if show_2h_eff and new_h2_pl
+    anchor_bi = f_bi_wick(h2_pl_raw, h2_pl_t, secs_2h, false)
+    f_add_buy(h2_pl_raw, anchor_bi, col_2h_buy, h2_buy_lines, h2_buy_labels, h2_buy_prices)
+if show_2h_eff and new_h2_ph
+    anchor_bi = f_bi_wick(h2_ph_raw, h2_ph_t, secs_2h, true)
+    f_add_sell(h2_ph_raw, anchor_bi, col_2h_sell, h2_sell_lines, h2_sell_labels, h2_sell_prices)
+
+// --- 4H ---
+if show_4h_eff and new_h4_pl
+    anchor_bi = f_bi_wick(h4_pl_raw, h4_pl_t, secs_4h, false)
+    f_add_buy(h4_pl_raw, anchor_bi, col_4h_buy, h4_buy_lines, h4_buy_labels, h4_buy_prices)
+if show_4h_eff and new_h4_ph
+    anchor_bi = f_bi_wick(h4_ph_raw, h4_ph_t, secs_4h, true)
+    f_add_sell(h4_ph_raw, anchor_bi, col_4h_sell, h4_sell_lines, h4_sell_labels, h4_sell_prices)
+
+// --- 1D ---
+if show_1d_eff and new_d1_pl
+    anchor_bi = f_bi_wick(d1_pl_raw, d1_pl_t, secs_1d, false)
+    f_add_buy(d1_pl_raw, anchor_bi, col_1d_buy, d1_buy_lines, d1_buy_labels, d1_buy_prices)
+if show_1d_eff and new_d1_ph
+    anchor_bi = f_bi_wick(d1_ph_raw, d1_ph_t, secs_1d, true)
+    f_add_sell(d1_ph_raw, anchor_bi, col_1d_sell, d1_sell_lines, d1_sell_labels, d1_sell_prices)
+
 
 // ==========================================
 // 7. UPDATE LINES & DETECT SWEEPS
@@ -871,24 +1029,37 @@ f_update_sells(lines_arr, labels_arr, prices_arr) =>
                     label.set_x(lb, new_x)
     grab
 
+// Process Buys
 g1 = f_update_buys(cur_buy_lines, cur_buy_labels, cur_buy_prices)
-g2 = f_update_buys(m5_buy_lines,  m5_buy_labels,  m5_buy_prices)
-g3 = f_update_buys(m15_buy_lines, m15_buy_labels, m15_buy_prices)
-g4 = f_update_buys(h1_buy_lines,  h1_buy_labels,  h1_buy_prices)
-sellsideGrabFound = g1 or g2 or g3 or g4
+g2 = f_update_buys(m3_buy_lines,  m3_buy_labels,  m3_buy_prices)
+g3 = f_update_buys(m5_buy_lines,  m5_buy_labels,  m5_buy_prices)
+g4 = f_update_buys(m15_buy_lines, m15_buy_labels, m15_buy_prices)
+g5 = f_update_buys(m30_buy_lines, m30_buy_labels, m30_buy_prices)
+g6 = f_update_buys(h1_buy_lines,  h1_buy_labels,  h1_buy_prices)
+g7 = f_update_buys(h2_buy_lines,  h2_buy_labels,  h2_buy_prices)
+g8 = f_update_buys(h4_buy_lines,  h4_buy_labels,  h4_buy_prices)
+g9 = f_update_buys(d1_buy_lines,  d1_buy_labels,  d1_buy_prices)
+sellsideGrabFound = g1 or g2 or g3 or g4 or g5 or g6 or g7 or g8 or g9
 
-g5 = f_update_sells(cur_sell_lines, cur_sell_labels, cur_sell_prices)
-g6 = f_update_sells(m5_sell_lines,  m5_sell_labels,  m5_sell_prices)
-g7 = f_update_sells(m15_sell_lines, m15_sell_labels, m15_sell_prices)
-g8 = f_update_sells(h1_sell_lines,  h1_sell_labels,  h1_sell_prices)
-buysideGrabFound = g5 or g6 or g7 or g8
+// Process Sells
+s1 = f_update_sells(cur_sell_lines, cur_sell_labels, cur_sell_prices)
+s2 = f_update_sells(m3_sell_lines,  m3_sell_labels,  m3_sell_prices)
+s3 = f_update_sells(m5_sell_lines,  m5_sell_labels,  m5_sell_prices)
+s4 = f_update_sells(m15_sell_lines, m15_sell_labels, m15_sell_prices)
+s5 = f_update_sells(m30_sell_lines, m30_sell_labels, m30_sell_prices)
+s6 = f_update_sells(h1_sell_lines,  h1_sell_labels,  h1_sell_prices)
+s7 = f_update_sells(h2_sell_lines,  h2_sell_labels,  h2_sell_prices)
+s8 = f_update_sells(h4_sell_lines,  h4_sell_labels,  h4_sell_prices)
+s9 = f_update_sells(d1_sell_lines,  d1_sell_labels,  d1_sell_prices)
+buysideGrabFound = s1 or s2 or s3 or s4 or s5 or s6 or s7 or s8 or s9
 
 // ==========================================
-// 8. PLOT GRAB DOTS
+// 8. PLOT GRAB DOTS 
 // ==========================================
 
-plot(show_dots and buysideGrabFound  ? high : na, "Buyside Grab Dot",  col_buyside_dot,  bubble_size, plot.style_circles, false, 0)
-plot(show_dots and sellsideGrabFound ? low  : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0)
+plot(show_dots and buysideGrabFound  ? high : na, "Buyside Grab Dot",  col_buyside_dot,  bubble_size, plot.style_circles, false, 0, display=display.pane)
+plot(show_dots and sellsideGrabFound ? low  : na, "Sellside Grab Dot", col_sellside_dot, bubble_size, plot.style_circles, false, 0, display=display.pane)
+
 
 // ==========================================
 // 9. NY SESSION VERTICAL LINES
@@ -905,7 +1076,8 @@ is_7am   = (h_ny == 7  and m_ny == 0)
 is_930am = (h_ny == 9  and m_ny == 30)
 is_1pm   = (h_ny == 13 and m_ny == 0)
 
-if show_ny_lines
+// Only draw when the active chart is exactly "1" minute
+if show_ny_lines and timeframe.period == "1"
     if is_7am
         line.new(x1=bar_index, y1=low, x2=bar_index, y2=high, extend=extend.both, color=col_ny, style=line.style_dashed, width=1)
     if is_930am
